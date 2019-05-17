@@ -1,0 +1,347 @@
+---
+title: "Short Chain Fatty Acids (SCFA)"
+author: "Sarah de Oliveira"
+date: "17 de maio de 2019"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introdução
+
+Sempre que se é iniciado um trabalho, necessita-se de uma bibliografia básica que supra a demanda de informações primordiais ao embasamento científico. Deste modo, faz-se necessária a seleção da melhor fonte de informação para o esboço de um trabalho científico, e com o auxílio de ferramentas de trabalho como o R e seus pacotes, tal seleção se torna mais fidedigna. Como no caso apresentado, traz-se um levantamento de autores e publicações relacionados com os Ácidos graxos de cadeia curta, do inglês, short chain fatty acids (SCFA). Os SCFAs são moléculas simples compostas por átomos de carbonos (1-5) e um grupo carboxila, produzidos pelo metabolismo fermentativo das bactérias que compõem a microbiota comensal intestinal. Eles são relevantes pois exercem funções biológicas a nível local no tratogastrointestinal e a nível sistêmico, sendo importantes para a modulação do sistema imune. 
+
+## Requerimentos
+
+Para que o trabalho pudesse ser executado, fez-se necessária a utilização de alguns programas, ferramentas e pacotes do R disponíveis para o uso. Dentre eles, destacam-se: Programa R e RStudio; Git (um sistema de controle de versão); MikTex (programa de conversão do Script do Rmarkdown para PDF); Pacote "Rmarkdown" (conversão de scripts para diversos formatos); Pacote "Bibliometrix" (conjunto de ferramentas para análises na área de cientometria e bibliometria); Um arquivo Scopus.bib (arquivo baixado da base de dados Scopus com todas as informações de artigos relacionados ao tema "SCFA").
+
+## Desenvolvimento
+
+#### Carregamento e conversão de dados
+
+Após realizar o download de todos os programas necessários, os quais foram citados anteriormente, e criação do seu diretório no Git, é preciso agora fazer o download dos pacotes necessários para a criação do trabalho. Primeiramente instala-se o Rmarkdown, realiza-se sua configuração e em seguida a instalação do pacote Bibliometrix.
+
+install.packages("rmarkdown")
+install.packages("bibliometrix")
+
+OBSERVAÇÃO: Não é possível gerar o arquivo de Word com as funções de instalação dos pacotes em forma de comandos.
+
+No caso de dúvidas basta digitar no console help(nome_da_função) ou ?nome_da_função, e no quadrante inferior direito irá aparecer um manual sobre como utilizar a função requerida.
+
+Para realizar o carregamento do pacote utilizado na análise, digita-se a seguinte linha de comando:
+
+```{r}
+library(bibliometrix)
+```
+
+Depois de estabelecer seu arquivo de dados na pasta de trabalho, é necessário que ele seja carregado no seu workspace para a análise. Para isso, utiliza-se a função "readFiles" sobre o arquivo "scopus.bib"", tal função será atribuída ao vetor de caracteres "D".
+
+```{r}
+D <- readFiles("scopus2.bib")
+```
+
+Desta forma agora O vetor "D" contém o nome dos arquivos baixados do site SCOPUS, pois a função "readFiles"" combina todos os arquivos de texto em um único vetor  grande de caracteres. 
+Em seguida o objeto D deve ser convertido em um data frame usando a função "convert2df" como na linha de comando abaixo, e atribuído a "M":
+
+```{r}
+M <- convert2df(D, dbsource = "scopus", format = "bibtex")
+```
+
+#### Análise Bibliométrica
+
+Agora o primeiro passo para realizar uma análise descritiva do quadro de dados bibliográficos é utilizar a função "biblioAnalysis", a qual calcula as principais medidas bibliométricas e retorna um objeto da classe "bibliometrix".
+
+```{r}
+results <- biblioAnalysis(M, sep = ";")
+```
+
+Como uma forma de resumir os principais resultados da análise bibliométrica, facilitando assim a leitura de todas as informações contidas ali, utiliza-se a função "summary", a qual apresenta as principais informações sobre o quadro de dados bibliográficos e várias tabelas, como produção científica anual, principais artigos por número de citações, autores mais produtivos, países mais produtivos, citação total por país, fontes mais relevantes (periódicos) e palavras-chave mais relevantes.
+
+```{r}
+summary(results, k = 10, pause = FALSE)
+```
+
+Essa função aceita dois argumentos, "k" é um valor que indica o número de linhas de cada tabela e "pause" é um valor lógico (VERDADEIRO ou FALSO) usado para permitir pausar na rolagem da tela ou não.
+A partir das informações básicas dadas pela função "summary", podemos construir gráficos que nos permitem visualizar as variáveis que estarão sendo analisadas em cima de nossos dados, como os autores mais produtivos, os países mais produtivos no quesito científico, a produção anual científica relativa ao tema procurado, etc. Para isso basta aplicar a função "plot" como descrito abaixo.
+  
+```{r}
+plot(x=results, k=10, pause=FALSE)
+```
+
+
+#### Análise de referências citadas
+
+Além de tudo o que já foi mostrado, também é possível montar uma tabela de frequências das referências mais citadas ou dos os primeiros autores mais citados, tudo isso utilizando a função "citations" como mostrado nos exemplos abaixo:
+
+  - Artigos mais citados:
+```{r}
+CR <- citations(M, field = "article", sep = ";")
+cbind(CR$Cited[1:10])
+```
+
+Outra função que podemos usar é a "localCitations", a qual contrói uma tabela dos autores mais citados dentro dos nossos próprios dados, ou seja, mede quantas vezes tal autor foi citado dentro da base de dados por outros autores que também estão presente no mesmo local. 
+
+```{r}
+CR <- localCitations(M, sep = ";")
+CR$Authors[1:10,]
+CR$Papers[1:10,]
+```
+
+#### Ranking de dominância de autores
+ 
+É possível determinar a fração artigos com múltiplos autores em que um deles é citado como primeiro autor, essa fração é chamada de fator de dominância. Para esse cálculo utilizamos a função "dominance", gerando assim um ranking de dominância dos autores, onde "results" resgata o objeto da classe bibliometrix e "k" o número de autores considerados na análise.
+   
+```{r}
+DF <- dominance(results, k = 10)
+DF
+```
+
+#### O índice-h dos autores
+
+O índice-h é uma métrica na qual se mensura o impacto da produtividade e da citação das publicações de um cientista. Tal índice beseia-se em um conjunto de artigos mais citados do referente pesquisador e no número de citações que esses artigos receberam em outras publicações. Para calcular o índice-h dos autores usamos a função "Hindex", ela também pode calcular o índice-h de fontes e suas variantes (índice-g e índice-m) em determinados dados bibliográficos. Neste caso, serão selecionados 10 autores.
+  
+```{r}
+authors=gsub(","," ",names(results$Authors)[1:10])
+indices <- Hindex(M, field = "author", elements=authors, sep = ";", years = 50)
+indices$H
+```
+
+#### Produtividade dos principais autores ao longo do tempo
+
+Para saber a produção dos autores (no caso, os 10 primeiros autores), em termos de número de publicações e total de citações por ano ao longo do tempo basta usar a função "AuthorProdOverTime". 
+
+```{r}
+topAU <- authorProdOverTime(M, k = 10, graph = TRUE)
+```
+
+#### Estimativa do coeficiente de Lei de Lotka
+
+A Lei de Lotka descreve a frequência de publicação pelos autores em qualquer área dada como uma lei do inverso do quadrado, onde o número de autores publicando um certo número de artigos é uma razão fixa para o número de autores publicando um único artigo. Deste modo, esta suposição implica que o coeficiente beta teórico da Lei de Lotka é igual a 2. A função "lotka" estima os coeficientes da Lei de Lotka para a produtividade científica. Usando a função "lotka" é possível estimar o coeficiente Beta dos nossos dados bibliográficos, avaliando através de um teste estatístico, a similaridade desta distribuição empírica com a teórica.
+
+```{r}
+L <- lotka(results)
+```
+
+  - Distribuição empírica da produtividade dos autores
+```{r}  
+L$AuthorProd
+```
+
+  - Estimativa do coeficiente Beta
+```{r}
+L$Beta
+```
+
+  - Constante
+```{r}
+L$C
+```
+  
+  - Qualidade de ajuste
+```{r}
+L$R2
+```
+
+  - p-Valor dos dois testes K-S da amostra
+```{r}
+L$p.value
+```
+
+A tabela "L$ AuthorProd" de modo geral nos fornece a distribuição da produtividade científica baseada em nossos dados. O coeficiente Beta estimado foi calculado em 2.40 com um ajuste de 0.90. O teste de duas amostras de Kolmogorov-Smirnoff fornece um valor de p em 0.094, o que significa que não há uma diferença significativa entre as distribuições de Lotka observadas e as teóricas. É possível comparar as duas distribuições através da utilização da função "plot".
+  
+```{r}
+Observed=L$AuthorProd[,3]
+Theoretical=10^(log10(L$C)-2*log10(L$AuthorProd[,1]))
+plot(L$AuthorProd[,1],Theoretical,type="l",col="red",ylim=c(0, 1), xlab="Articles",ylab="Freq. of Authors",main="Scientific Productivity")
+lines(L$AuthorProd[,1],Observed,col="blue")
+legend(x="topright",c("Theoretical (B=2)","Observed"),col=c("red","blue"),lty = c(1,1,1),cex=0.6,bty="n")
+```
+
+#### Matrizes de rede bibliográfica
+
+Os elementos do artigo de certa forma estão conectados entre si através de ligações que são estabelecidas pelo próprio manuscrito como os autores, palavras-chave, etc. Essas ligações entre os elementos podem gerar redes bipartidas, as quais são representadas como matrizes retangulares. Além disso, tais publicações científicas geralmente contêm referências a outros trabalhos científicos, gerando desta forma uma rede adicional chamada de rede de co-citação ou acoplamento.
+
+##### - Redes bipartidas
+
+Para calcular uma rede bipartida selecionando um dos elementos presentes em nossos dados, podemos usar a função "cocMatrix", onde A é uma matriz binária retangular, representando uma rede bipartida onde linhas e colunas são manuscritos e fontes respectivamente.
+  
+```{r}
+A <- cocMatrix(M, Field = "SO", sep = ";")
+```
+
+Caso haja necessidade há a possibilidade de classificar, em ordem decrescente, as somas da coluna de A, desse jeito você pode ver as fontes de publicação mais relevantes.
+  
+```{r}
+sort(Matrix::colSums(A), decreasing = TRUE)[1:5]
+```
+
+Seguindo este tipo de prerrogativa, é possível criar vários tipos de redes bipartidas, por exemplo, uma rede de autores ou de citações, veja os exemplos abaixo:
+  
+```{r}
+A <- cocMatrix(M, Field = "CR", sep = ".  ")
+
+A <- cocMatrix(M, Field = "AU", sep = ";")
+```
+
+Entretanto se a intenção for criar uma rede do país, você precisa extrair essas informações do atributo de afiliação usando a função "metaTagExtraction", uma vez que os países dos autores não é um elemento padrão do quadro de dados bibliográficos.
+
+```{r}
+M <- metaTagExtraction(M, Field = "AU_CO", sep = ";")
+A <- cocMatrix(M, Field = "AU_CO", sep = ";")
+```
+
+Para criar uma rede de palavras-chave do autor ou uma rede de palavras-chaves Plus, é necessário utilizar as funções abaixo:
+```{r}
+A <- cocMatrix(M, Field = "DE", sep = ";")
+
+A <- cocMatrix(M, Field = "ID", sep = ";")
+```
+
+##### - Acoplamento bibliográfico
+
+A força de acoplamento de dois artigos é definida pelo número de referências que os artigos têm em comum, isto é, dois artigos poderiam ser bibliograficamente acoplados se pelo menos uma fonte citada aparecesse nas referências bibliográficas de ambos os artigos. A função "biblioNetwork" consegue calcular a partir de um quadro de dados bibliográficos, as redes de acoplamento mais utilizadas, como Autores, Fontes e Países, para isso usa-se o código a seguir:
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "coupling", network = "references", sep = ".  ")
+```
+
+Com base no exposto os artigos com apenas algumas referências tenderiam a ser acoplados bibliograficamente de uma forma mais fraca que os outros se a força de acoplamento fosse medida com base na quantidade de referências que esses artigos têm em comum. Indicando assim que poderia ser mais fácil alterar para uma medida relativa de acoplamento bibliográfico. Para isso temos a função "normalizeSimilarity", que calcula a força de associação, inclusão, similaridade de Jaccard ou Salton entre os vértices de uma rede. "normalizeSimilaridade" pode ser recuperada diretamente da função networkPlot () usando o argumento normalize.
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "coupling", network = "authors", sep = ";")
+
+net=networkPlot(NetMatrix,  normalize = "salton", weighted=NULL, n = 100, Title = "Authors' Coupling", type = "fruchterman", size=5,size.cex=T,remove.multiple=TRUE,labelsize=0.8,label.n=10,label.cex=F)
+```
+
+##### - Co-citação bibliográfica
+
+Uma rede de co-citação também pode ser criada a partir da função "biblioNetwork". A co-citação pode ser considerada como uma contrapartida do acoplamento bibliográfico uma vez que ela relaciona a co-citação de dois artigos quando ambos são citados em uma terceira publicação. 
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "co-citation", network = "references", sep = ".  ")
+```
+
+##### - Colaboração bibliográfica
+
+A criação de uma rede de colaboração científica também depende da função "biblio1network", porém esta é uma rede na qual os nós são autores e os links são co-autoriais, pois a última é uma das formas mais bem documentadas de colaboração científica. Calcula-se este tipo de rede a partir do seguinte código:
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "collaboration", network = "authors", sep = ";")
+```
+
+Existe a possibilidade de criar também uma rede de colaboração entre países com o seguinte código:
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "collaboration", network = "countries", sep = ";")
+```
+
+#### Análise descritiva das características do gráfico de rede
+
+Para calcular as várias estatísticas de resumo podemos utilizar a função "networkStat", isto é, partindo de uma matriz bibliográfica podemos computar dois grupo de medidas descritivas que serão mais exploradas adiante.
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "co-occurrences", network = "keywords", sep = ";")
+netstat <- networkStat(NetMatrix)
+```
+
+##### - As estatísticas resumidas da rede
+
+Uma das medidas descritivas analisadas são as estatísticas resumidas de rede, as quais permitem descrever as seguintes propriedades estruturais de uma rede: Tamanho (número de vértices que compõe a rede); Densidade (proporção das bordas atuais de todas as bordas possíveis na rede); Transitividade (proporção de triângulos para triplos conectados); Diâmetro (distância do caminho mais curto entre dois nós na rede); Distribuição de graus (distribuição cumulativa de graus de vértices); Centralização de graus (grau normalizado da rede global); Centralização de proximidade (inverso normalizado do comprimento do caminho mais curto entre dois nós médio do vértice para outros na rede); Centralização do vetor próprio (primeiro autovetor da matriz gráfica); Centralização de proximidade (número normalizado da distância de nós que passam pelo vértice) e Comprimento médio do caminho (média da menor distância entre cada par de vértices na rede).
+  
+```{r}
+names(netstat$network)
+```
+
+##### - Principais índices de centralidade e prestígio do vértices
+
+Outro tipo de medida descritiva são os principais índices de centralidade e prestígio dos vértices, na qual é possível identificar os vértices mais importantes em uma rede e a propensão de dois vértices que estão conectados estarem conectados a um terceiro vértice. As estatísticas, no nível do vértice, retornadas pelo networkStat são: Centralidade do Grau; Centralidade de proximidade (quantos passos são necessários para acessar todos os outros vértices); Centralidade do autovetor (medida de estar bem conectado ao bem conectado); Centralidade da intermediação (mede a corretagem ou o potencial de gatekeeping, o número de caminhos mais curtos entre os vértices que passam por um determinado vértice); Pontuação de PageRank (aproxima a probabilidade de que qualquer mensagem chegue a um determinado vértice); Hub Score (estima o valor dos links que saem do vértice); Pontuação de Autoridade (esclarece que um vértice tem alta autoridade quando está vinculado por muitos outros vértices que estão conectando muitos outros vértices) e Classificação de Vértices (classificação obtida como uma combinação ponderada linear das medidas de vértice de centralidade e prestígio). 
+
+```{r}
+names(netstat$vertex)
+```
+
+Se for o caso de uma análise mais resumida dos principais resultados da função "networkStat", usa-se o resumo da função genérica ("summary"), desta forma será exibido as principais informações sobre a rede e a descrição do vértice através de várias tabelas. Além do mais é possível selecionar o número de linhas a serem exibidos durante a leitura das tabelas geradas apenas colocando o argumento "k" no código.
+
+```{r}
+summary(netstat, k=10)
+```
+
+#### Visualizando redes bibliográficas
+
+As redes bibliográficas podem ser visualizadas ou modeladas graficamente baseadas na função escolhida e logicamente com o que quer ser analisado, determinando deste modo o tipo de rede bibliográfica que será criada.
+
+##### - Colaboração Científica entre Países
+
+Para criar e plotar uma rede de colaboração científica entre diferentes países utiliza-se o seguinte código: 
+
+```{r}
+M <- metaTagExtraction(M, Field = "AU_CO", sep = ";")
+NetMatrix <- biblioNetwork(M, analysis = "collaboration", network = "countries", sep = ";")
+
+net=networkPlot(NetMatrix, n = dim(NetMatrix)[1], Title = "Country Collaboration", type = "circle", size=TRUE, remove.multiple=FALSE,labelsize=0.7,cluster="none")
+```
+
+##### - Rede de co-citação
+
+No caso de criar e plotar uma rede de co-citação, precisamos do seguinte código:
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "co-citation", network = "references", sep = ";")
+
+net=networkPlot(NetMatrix, n = 30, Title = "Co-Citation Network", type = "fruchterman", size=T, remove.multiple=FALSE, labelsize=0.7,edgesize = 5)
+```
+
+##### - Co-ocorrências de palavras-chave
+
+Por fim, para criar e plotar uma rede de co-ocorrências de palavras-chave usa-se o seguinte código:
+
+```{r}
+NetMatrix <- biblioNetwork(M, analysis = "co-occurrences", network = "keywords", sep = ";")
+
+net=networkPlot(NetMatrix, normalize="association", weighted=T, n = 30, Title = "Keyword Co-occurrences", type = "fruchterman", size=T,edgesize = 5,labelsize=0.7)
+```
+
+#### Análise Co-Word: A estrutura conceitual de um campo
+
+A análise conjunta tem o propósito de mapear a estrutura conceitual de um framework usando a palavra co-ocorrências em uma base de dados bibliográficos. Ela pode ser realizada através de técnicas de redução de dimensionalidade, como Escala Multidimensional (MDS), Análise de Correspondência (AC) ou Análise de Correspondência Múltipla (ACM). Utilizando a função "conceptualStructure" podemos executar uma CA ou MCA para criar uma estrutura conceitual do campo e o K-means clustering para identificar clusters de documentos que expressam conceitos comuns, no final os resultados serão plotados em um mapa bidimensional como o exemplo a seguir.
+
+```{r}
+CS <- conceptualStructure(M,field="ID", method="CA", minDegree=4, k.max=8, stemming=FALSE, labelsize=10, documents=10)
+```
+
+#### Rede Histórica de Citação Direta
+
+Quando queremos representar um mapa de rede cronológica das citações diretas mais relevantes resultantes de uma base de dados bibliográficos, devemos criar um mapa historiográfico. Para isso basta usar a função "hitsNetwork" seguida de um código que use a função "histPlot" para a plotagem dos dados.
+
+```{r}
+options(width=130)
+histResults <- histNetwork(M, min.citations = 10, sep = ";")
+
+net <- histPlot(histResults, n=15, size = 20, labelsize=10, size.cex=TRUE, arrowsize = 0.5, color = TRUE)
+```
+
+## Respostas encontradas
+
+Ao final do trabalho concluí-se que o pacote "bibliometrix" formnece ferramentas práticas e eficazes para uma análise bibliográfica, com as funções existentes em tal pacote é possível criar e plotar dados em formas de tabela, gráficos e redes de conexões, onde podem ser analisados os mais diversos parâmetros que estão envolvidos no banco de dados bibliográficos. Com o desenvolvimento do script que abrange os códigos baseados no pacote "bibliometrix" desnvolveu-se uma análise de dados embasada no tema Short Chain Fatty Acids, no qual encontraram-se informações relevantes e essenciais para o referenciamento bibliográfico de uma produção científica, por exemplo, descobriu-se que no ano de 2018 houve o maior índice de publicação (157) de artigos científicos. Apesar da China ser o país com o mais alto nível de publicação, grande parte dos artigos mais citados são norte-americanos. Li foi o autor mais produtivo encontrado e o mais citado dentro do nosso banco de dados, entretanto Cummings foi o mais citado de forma geral. Dentre os resultados obtidos, nota-se que as revistas com maior número de publicações relacionadas ao tema eram a Biosource Technology e Plos One. Além dos resultados fornecidos foi possível criar redes de conexões entre autores, países de colaboração e palavras-chaves. Em suma, as possibilidades de trabalho são extremamente diversificadas, basta compreender a própria necessidade e executá-la.
+
+## Dificuldades encontradas
+
+Dentre as dificuldades encontradas no decorrer do desenvolvimento do trabalho, vale destacar o problema em gerar um arquivo no formato de doc quando a função de instalação de pacotes (install.packages) era utilizada, por isso, no script os códigos foram retirados. Outro ponto foi a configuração do Github e aprender a lidar com o funcionamento de tal ferramenta, a maior dificuldade foi enviar os commits para armazenamento no repositório, o que exigiu mais atenção e uma pesquisa em outras fontes sobre como funciona o Controle de Versão; no entanto não foi possível unir os branches criados através da função merge, o que exigiu a criação de outro repositório durante o desenvolvimento do trabalho. Além disso, entender as funções e os argumentos pertinentes a cada uma foi um desafio, modificá-las de modo que os gráficos e redes se tornassem legíveis e esteticamente melhores foi o maior obstáculo, entretanto nem sempre o objetivo foi alcançado. 
+  
+## Bibliografia
+
+Aria, M. & Cuccurullo, C. (2017) bibliometrix: Uma ferramenta R para análise abrangente de mapeamento científico, Journal of Informetrics, 11 (4), pp. 959-975, Elsevier.
+
+Git: Guia Prático - Roger Dudler (https://rogerdudler.github.io/git-guide/index.pt_BR.html)
+
+Git push - Página do manual (file:///C:/Program%20Files/Git/mingw64/share/doc/git-doc/git-push.html)
+
+Uma breve introdução à bibliometrix - Massimo Aria e Corrado Cuccurullo (https://cran.r-project.org/web/packages/bibliometrix/vignettes/bibliometrix-vignette.html)
+
+SCOPUS (http://www.scopus.com)
+
